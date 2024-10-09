@@ -126,7 +126,10 @@ const styles = StyleSheet.create({
   },
   movieContainer: {
     flex: 1,
-    margin: 10,
+    marginTop:10,
+    marginBottom:10,
+    marginLeft:5,
+    marginRight:10,
     paddingTop: 0,
   },
   poster: {
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
-    marginTop: 25,
+    marginTop: 5,
     fontFamily:"Flux",
   },
   backText: {
