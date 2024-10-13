@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 30,
     fontWeight: "normal",
-    marginVertical: 10,
+    marginVertical: 0,
     fontFamily: "Flux",
   },
   genres: {

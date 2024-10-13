@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,23 +7,46 @@ import {
   TouchableOpacity,
   StyleSheet,
   ImageBackground,
+  Dimensions,
+  ScrollView
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { dummyMovies } from "../data/MovieData";
 import * as Font from "expo-font";
-import { useEffect } from "react";
+
+const screenWidth = Dimensions.get("window").width; // Get screen width for slideshow
+
+// Fake data for slideshow
+const slideshowData = [
+  {
+    id: 1,
+    image: "https://www.btglifestyle.com/wp-content/uploads/2024/08/Alien-Romulus-Spoiler-Free-Review-BTG-Lifestyle.jpg",
+    title: "Slideshow Movie 1",
+  },
+  {
+    id: 2,
+    image: "https://www.evildeadrisemovie.com/images/share.jpg",
+    title: "Slideshow Movie 2",
+  },
+  {
+    id: 3,
+    image: "https://www.upressonline.com/wp-content/uploads/2021/09/Malignant-movie.jpg",
+    title: "Slideshow Movie 3",
+  },
+];
 
 export default function HomeScreen({ navigation }) {
   const [movies] = useState(dummyMovies);
   const [showMovies, setShowMovies] = useState(false); // State to control when to show the movie list
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0); // State for active slide
 
   // Load the custom font
   useEffect(() => {
     const loadFonts = async () => {
       await Font.loadAsync({
-        "Flux": require("../assets/Flux.ttf"), // Path to your font file
+        Flux: require("../assets/Flux.ttf"), // Path to your font file
       });
       setFontsLoaded(true);
     };
@@ -47,6 +70,34 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  const renderSlideshowItem = ({ item }) => (
+    <View style={styles.slideshowItem}>
+      <Image source={{ uri: item.image }} style={styles.slideshowImage} />
+    </View>
+  );
+
+  // Handle the end of scrolling event
+  const onMomentumScrollEnd = (event) => {
+    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+    setActiveSlide(slideIndex); // Update active slide based on precise scroll position
+  };
+
+  const renderPaginationDots = () => {
+    return (
+      <View style={styles.paginationDotsContainer}>
+        {slideshowData.map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.paginationDot,
+              activeSlide === index ? styles.activeDot : styles.inactiveDot,
+            ]}
+          />
+        ))}
+      </View>
+    );
+  };
+
   if (showMovies) {
     return (
       <LinearGradient
@@ -55,27 +106,49 @@ export default function HomeScreen({ navigation }) {
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
       >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+
         {/* Back link */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.backButton}
           onPress={() => setShowMovies(false)} // Return to the banner screen
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
           <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+
+        {/* Slideshow */}
+        <FlatList
+          data={slideshowData}
+          renderItem={renderSlideshowItem}
+          keyExtractor={(item) => item.id.toString()}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={styles.slideshow}
+          onMomentumScrollEnd={onMomentumScrollEnd} // Update slide on momentum end
+          snapToAlignment="center"
+          decelerationRate="fast"
+          snapToInterval={screenWidth} // Ensure each item snaps to the full screen width
+        />
+
+        {/* Pagination Dots */}
+        {renderPaginationDots()}
 
         {/* Movie list */}
-        <Text style={styles.movieSubText}>Featured Movies</Text>
-        <FlatList
-          data={movies}
-          renderItem={renderMovie}
-          keyExtractor={(item) => item._id}
-          numColumns={2}
-          columnWrapperStyle={{
-            justifyContent: "space-between",
-            marginBottom: 10,
-          }}
-        />
+        {movies.map((category) => (
+            <View key={category.id}>
+              <Text style={styles.movieSubText}>{category.title}</Text>
+              <FlatList
+                data={category.movies}
+                renderItem={renderMovie}
+                keyExtractor={(item) => item._id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              />
+            </View>
+          ))}
+        </ScrollView>
       </LinearGradient>
     );
   }
@@ -114,6 +187,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  scrollContainer: {
+    paddingTop: 0,
+  },
   fullScreenBanner: {
     flex: 1,
     justifyContent: "center",
@@ -126,24 +202,24 @@ const styles = StyleSheet.create({
   },
   movieContainer: {
     flex: 1,
-    marginTop:10,
-    marginBottom:10,
-    marginLeft:5,
-    marginRight:10,
+    marginTop: 10,
+    marginBottom: 10,
+    marginLeft: 5,
+    marginRight: 10,
     paddingTop: 0,
   },
   poster: {
-    width: 150,
-    height: 225,
+    width: 125,
+    height: 200,
     borderRadius: 10,
   },
   title: {
-    color: "#fff",
+    color: "#b3b3b3",
     textAlign: "center",
     marginTop: 10,
     fontWeight: "normal",
     fontSize: 18,
-    fontFamily:"Flux",
+    fontFamily: "Flux",
   },
   welcomeContainer: {
     alignItems: "center",
@@ -155,8 +231,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontWeight: "normal",
     textAlign: "center",
-    letterSpacing:15,
-    fontFamily:"Flux",
+    letterSpacing: 15,
+    fontFamily: "Flux",
   },
   welcomeSubText: {
     color: "#fff",
@@ -164,40 +240,73 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontWeight: "normal",
     textAlign: "center",
-    fontFamily:"Flux",
+    fontFamily: "Flux",
   },
-  movieSubText:{
-    color: "#fff",
+  movieSubText: {
+    color: "#b32400",
     fontSize: 20,
-    marginBottom: 20,
+    marginBottom: 5,
+    marginTop:25,
+    paddingLeft:10,
     fontWeight: "normal",
-    textAlign: "center",
-    fontFamily:"Flux",
+    textAlign: "justify",
+    fontFamily: "Flux",
   },
   exploreButton: {
     backgroundColor: "#4d0000", // Red button color
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 25,
-    fontFamily:"Flux",
+    fontFamily: "Flux",
   },
   exploreButtonText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "500",
-    fontFamily:"Flux",
+    fontFamily: "Flux",
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
-    marginTop: 5,
-    fontFamily:"Flux",
+    marginBottom: 20,
+    marginTop: 0,
+    fontFamily: "Flux",
   },
   backText: {
     color: "#fff",
     fontSize: 18,
     marginLeft: 10,
-    fontFamily:"Flux",
+    fontFamily: "Flux",
+  },
+  slideshow: {
+    marginBottom: 20, // Add margin for the slideshow
+  },
+  slideshowItem: {
+    width: screenWidth, // Full screen width for each slide
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  slideshowImage: {
+    width: screenWidth,
+    height: 200,
+    borderRadius: 10,
+  },
+  paginationDotsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 0,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+    backgroundColor: "#ddd",
+  },
+  activeDot: {
+    backgroundColor: "#b32400", // Active dot color (red)
+  },
+  inactiveDot: {
+    backgroundColor: "#888", // Inactive dot color (grey)
   },
 });
