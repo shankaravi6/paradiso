@@ -11,58 +11,60 @@ import {
   ScrollView
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { dummyMovies } from "../data/MovieData";
 import * as Font from "expo-font";
 
-const screenWidth = Dimensions.get("window").width; // Get screen width for slideshow
-
-// Fake data for slideshow
-const slideshowData = [
-  {
-    id: 1,
-    image: "https://www.btglifestyle.com/wp-content/uploads/2024/08/Alien-Romulus-Spoiler-Free-Review-BTG-Lifestyle.jpg",
-    title: "Slideshow Movie 1",
-  },
-  {
-    id: 2,
-    image: "https://www.evildeadrisemovie.com/images/share.jpg",
-    title: "Slideshow Movie 2",
-  },
-  {
-    id: 3,
-    image: "https://www.upressonline.com/wp-content/uploads/2021/09/Malignant-movie.jpg",
-    title: "Slideshow Movie 3",
-  },
-];
+const screenWidth = Dimensions.get("window").width;
 
 export default function HomeScreen({ navigation }) {
-  const [movies] = useState(dummyMovies);
-  const [showMovies, setShowMovies] = useState(false); // State to control when to show the movie list
+  const [movies, setMovies] = useState([]);
+  const [slides, setSlides] = useState([]);
+  const [showMovies, setShowMovies] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const [activeSlide, setActiveSlide] = useState(0); // State for active slide
+  const [activeSlide, setActiveSlide] = useState(0);
 
-  // Load the custom font
+  // Load custom font
   useEffect(() => {
     const loadFonts = async () => {
       await Font.loadAsync({
-        Flux: require("../assets/Flux.ttf"), // Path to your font file
+        Flux: require("../assets/Flux.ttf"),
       });
       setFontsLoaded(true);
     };
-
     loadFonts();
   }, []);
 
+  // Fetch movies data from API
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await fetch('https://paradiso-server.onrender.com/movies'); // Use your server URL
+        const data = await response.json();
+        setMovies(data);
+      } catch (error) {
+        console.error("Error fetching movies: ", error);
+      }
+    };
+    fetchMovies();
+  }, []);
+
+  // Fetch slideshow data from API
+  useEffect(() => {
+    const fetchSlides = async () => {
+      try {
+        const response = await fetch('https://paradiso-server.onrender.com/slide'); // Use your server URL
+        const data = await response.json();
+        setSlides(data);
+      } catch (error) {
+        console.error("Error fetching slides: ", error);
+      }
+    };
+    fetchSlides();
+  }, []);
+
   const renderMovie = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => navigation.navigate("Movie", { movie: item })}
-    >
+    <TouchableOpacity onPress={() => navigation.navigate("Movie", { movie: item })}>
       <View style={styles.movieContainer}>
-        <LinearGradient
-          colors={["rgba(0, 0, 0, 0.6)", "transparent"]} // Dimming effect
-          style={styles.gradientOverlay}
-        >
+        <LinearGradient colors={["rgba(0, 0, 0, 0.6)", "transparent"]} style={styles.gradientOverlay}>
           <Image source={{ uri: item.poster }} style={styles.poster} />
         </LinearGradient>
         <Text style={styles.title}>{item.title}</Text>
@@ -76,22 +78,18 @@ export default function HomeScreen({ navigation }) {
     </View>
   );
 
-  // Handle the end of scrolling event
   const onMomentumScrollEnd = (event) => {
     const slideIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-    setActiveSlide(slideIndex); // Update active slide based on precise scroll position
+    setActiveSlide(slideIndex);
   };
 
   const renderPaginationDots = () => {
     return (
       <View style={styles.paginationDotsContainer}>
-        {slideshowData.map((_, index) => (
+        {slides.map((_, index) => (
           <View
             key={index}
-            style={[
-              styles.paginationDot,
-              activeSlide === index ? styles.activeDot : styles.inactiveDot,
-            ]}
+            style={[styles.paginationDot, activeSlide === index ? styles.activeDot : styles.inactiveDot]}
           />
         ))}
       </View>
@@ -100,43 +98,23 @@ export default function HomeScreen({ navigation }) {
 
   if (showMovies) {
     return (
-      <LinearGradient
-        colors={["#0f0000", "#0f0000", "#0a0000"]} // Red horror gradient
-        style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-
-        {/* Back link */}
-        {/* <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => setShowMovies(false)} // Return to the banner screen
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-          <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity> */}
-
-        {/* Slideshow */}
-        <FlatList
-          data={slideshowData}
-          renderItem={renderSlideshowItem}
-          keyExtractor={(item) => item.id.toString()}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          style={styles.slideshow}
-          onMomentumScrollEnd={onMomentumScrollEnd} // Update slide on momentum end
-          snapToAlignment="center"
-          decelerationRate="fast"
-          snapToInterval={screenWidth} // Ensure each item snaps to the full screen width
-        />
-
-        {/* Pagination Dots */}
-        {renderPaginationDots()}
-
-        {/* Movie list */}
-        {movies.map((category) => (
+      <LinearGradient colors={["#0f0000", "#0f0000", "#0a0000"]} style={styles.container} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <FlatList
+            data={slides}
+            renderItem={renderSlideshowItem}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            style={styles.slideshow}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            snapToAlignment="center"
+            decelerationRate="fast"
+            snapToInterval={screenWidth}
+          />
+          {renderPaginationDots()}
+          {movies.map((category) => (
             <View key={category.id}>
               <Text style={styles.movieSubText}>{category.title}</Text>
               <FlatList
@@ -155,25 +133,14 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={{
-        uri: "https://i.pinimg.com/736x/c7/40/6e/c7406e9edfd1067b758f0adfad5e3c40.jpg", // Replace with actual banner image URL
-      }}
+      source={{ uri: "https://i.pinimg.com/736x/c7/40/6e/c7406e9edfd1067b758f0adfad5e3c40.jpg" }}
       style={styles.fullScreenBanner}
     >
-      {/* Overlay for dimming effect */}
-      <LinearGradient
-        colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.1)"]} // Dimming effect with black transparency
-        style={styles.gradientOverlay}
-      >
+      <LinearGradient colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.1)"]} style={styles.gradientOverlay}>
         <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>PARADISO</Text>
           <Text style={styles.welcomeSubText}>Watch latest horror movies</Text>
-
-          {/* Explore Button */}
-          <TouchableOpacity
-            style={styles.exploreButton}
-            onPress={() => setShowMovies(true)} // Show the movie list on button press
-          >
+          <TouchableOpacity style={styles.exploreButton} onPress={() => setShowMovies(true)}>
             <Text style={styles.exploreButtonText}>Watch Now</Text>
           </TouchableOpacity>
         </View>
@@ -243,7 +210,7 @@ const styles = StyleSheet.create({
     fontFamily: "Flux",
   },
   movieSubText: {
-    color: "#b32400",
+    color: "#ffb3b3",
     fontSize: 20,
     marginBottom: 5,
     marginTop:25,
