@@ -73,9 +73,11 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderSlideshowItem = ({ item }) => (
-    <View style={styles.slideshowItem}>
-      <Image source={{ uri: item.image }} style={styles.slideshowImage} />
-    </View>
+    <TouchableOpacity onPress={() => navigation.navigate("Movie", { movie: item })}>
+      <View style={styles.slideshowItem}>
+        <Image source={{ uri: item.poster }} style={styles.slideshowImage} />
+      </View>
+    </TouchableOpacity>
   );
 
   const onMomentumScrollEnd = (event) => {
